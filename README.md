@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/logo.png" alt="Flow Task Manager Logo" width="120" />
+  <img src="./public/logo_dark.png" alt="Flow Task Manager Logo" width="120" />
   <h1>🚀 Flow Task Manager</h1>
   
   <p>A high-performance, dark-themed Kanban and Project Management suite.</p>
