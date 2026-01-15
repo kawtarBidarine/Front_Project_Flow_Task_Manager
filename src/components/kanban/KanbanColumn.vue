@@ -1,14 +1,14 @@
 <template>
   <div
     :id="'column-' + columnId"
-    class="column"
-    :class="{ 'drag-over': isDragOver }"
+    class="bg-slate-800/50 backdrop-blur-lg rounded-xl p-4 border border-slate-700/50 flex flex-col shadow-2xl transition-all duration-300"
+    :class="{ 'border-blue-500 shadow-blue-500/30': isDragOver }"
     @dragover.prevent="onDragOver"
-    @drop="onDrop"
+    @drop.prevent="onDrop"
     @dragleave="onDragLeave"
   >
     <!-- Column Header -->
-    <div class="column-header">
+    <div class="flex items-center justify-between mb-4 flex-shrink-0">
       <div class="flex items-center gap-2">
         <div :class="['w-3 h-3 rounded-full', column.color]"></div>
         <h2 class="font-semibold text-white text-lg">{{ column.title }}</h2>
@@ -36,15 +36,21 @@
     />
 
     <!-- Task List -->
-    <div class="task-list">
+    <div class="flex flex-col gap-3 overflow-y-auto pr-1 -mr-1 flex-grow scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
       <TaskCard
         v-for="task in column.tasks"
         :key="task.id"
         :task="task"
         :column-id="columnId"
+        @click="handleTaskClick(task)"
         @delete="(taskId) => $emit('delete-task', { columnId, taskId })"
-        @drag-start="(task) => $emit('drag-start', { task, columnId })"
+        @drag-start="handleDragStart"
       />
+      
+      <!-- Empty State -->
+      <div v-if="column.tasks.length === 0 && !showAddTask" class="flex flex-col items-center justify-center py-8 text-slate-600">
+        <p class="text-sm">No tasks</p>
+      </div>
     </div>
   </div>
 </template>
@@ -76,61 +82,62 @@ const emit = defineEmits([
   'drag-start',
   'drag-over',
   'drag-leave',
-  'drop'
+  'drop',
+  'task-click'
 ]);
 
 const isDragOver = ref(false);
 
-const onDragOver = () => {
+// Handle task click and emit to parent
+const handleTaskClick = (task) => {
+  emit('task-click', task);
+};
+
+const handleDragStart = (task) => {
+  emit('drag-start', { task, columnId: props.columnId });
+};
+
+const onDragOver = (event) => {
+  event.preventDefault();
   isDragOver.value = true;
   emit('drag-over', props.columnId);
 };
 
-const onDragLeave = () => {
-  isDragOver.value = false;
-  emit('drag-leave', props.columnId);
+const onDragLeave = (event) => {
+  // Only trigger if leaving the column itself, not child elements
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = event.clientX;
+  const y = event.clientY;
+  
+  if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+    isDragOver.value = false;
+    emit('drag-leave', props.columnId);
+  }
 };
 
-const onDrop = () => {
+// FIXED: Emit object with columnId property
+const onDrop = (event) => {
+  event.preventDefault();
   isDragOver.value = false;
-  emit('drop', props.columnId);
+  emit('drop', { columnId: props.columnId });
 };
 </script>
 
 <style scoped>
-.column {
-  background: rgba(30, 41, 59, 0.5);
-  backdrop-filter: blur(10px);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  border: 1px solid rgba(51, 65, 85, 0.5);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s;
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
 }
 
-.column.drag-over {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.column-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  flex-shrink: 0;
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 3px;
 }
 
-.task-list {
-  max-height: calc(100vh - 180px);
-  overflow-y: auto;
-  padding: 0.25rem;
-  margin: -0.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex-grow: 1;
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 </style>

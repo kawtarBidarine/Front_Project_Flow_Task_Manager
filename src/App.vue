@@ -1,7 +1,7 @@
 <template>
   <div v-if="!$route.meta.hideShell" class="app-layout">
-    <AppHeader />
-    <AppSidebar />
+    <AppHeader v-if="!$route.meta.hideShell"/>
+    <AppSidebar v-if="!$route.meta.hideShell"/>
     <main class="main-content">
       <router-view />
     </main>
@@ -11,8 +11,25 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
+import { useUserStore } from '@/stores/user';
+import { useProjectStore } from '@/stores/project'; // Import project store
 import AppHeader from './components/layout/AppHeader.vue';
 import AppSidebar from './components/layout/AppSidebar.vue';
+
+const userStore = useUserStore();
+const projectStore = useProjectStore(); // Initialize store
+
+onMounted(async () => {
+  console.log('App initializing...');
+  await userStore.initialize();
+  
+  if (userStore.token) {
+    projectStore.fetchProjects(); 
+  }
+  
+  console.log('App ready!');
+});
 </script>
 
 <style scoped>
