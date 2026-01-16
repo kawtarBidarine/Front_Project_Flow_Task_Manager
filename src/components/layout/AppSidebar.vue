@@ -1,5 +1,30 @@
 <template>
   <aside class="sidebar">
+    <!-- Mobile Close Button -->
+    <div class="lg:hidden flex items-center justify-between p-4 border-b border-slate-700">
+      <h2 class="text-lg font-bold text-blue-400">Menu</h2>
+      <button 
+        @click="$emit('close')"
+        class="p-2 rounded-lg text-slate-300 hover:bg-slate-700 transition"
+        aria-label="Close menu"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="20" 
+          height="20" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2"
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+        >
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
     <!-- Scrollable Navigation Content -->
     <nav class="sidebar-content">
       <div>
@@ -203,10 +228,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
+
+defineEmits(['close']);
 
 const router = useRouter();
 const route = useRoute();
@@ -280,9 +307,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: sticky;
-  top: 0;
-  overflow-y: auto;
+  height: 100%;
 }
 
 .sidebar-content {
@@ -306,6 +331,15 @@ onMounted(() => {
 .sidebar-content::-webkit-scrollbar-thumb {
   background: #475569;
   border-radius: 3px;
+}
+
+/* Navigation Items */
+.nav-item {
+  @apply flex items-center px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition;
+}
+
+.router-link-active {
+  @apply bg-blue-900/40 text-blue-400 font-medium;
 }
 
 /* Add Project Button */
@@ -423,6 +457,61 @@ onMounted(() => {
 
 .create-first-project-btn:hover {
   background: rgba(59, 130, 246, 0.3);
+}
+
+/* Sticky Footer */
+.sidebar-footer {
+  border-top: 1px solid #334155;
+  padding: 1rem;
+  background: #1e293b;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+}
+
+.user-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Modal Styles */
@@ -597,67 +686,22 @@ onMounted(() => {
   transform: scale(0.95);
 }
 
-/* Sticky Footer */
-.sidebar-footer {
-  border-top: 1px solid #334155;
-  padding: 1rem;
-  background: #1e293b;
-  margin-top: auto;
-  flex-shrink: 0;
-  z-index: 10;
-}
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .modal-content {
+    max-width: calc(100vw - 2rem);
+  }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: rgba(15, 23, 42, 0.5);
-  border-radius: 0.75rem;
-  border: 1px solid #334155;
-}
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 
-.user-avatar {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  font-size: 1rem;
-  flex-shrink: 0;
-}
+  .modal-header {
+    padding: 1rem;
+  }
 
-.user-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #f1f5f9;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-email {
-  font-size: 0.75rem;
-  color: #94a3b8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nav-item {
-  @apply flex items-center px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition;
-}
-
-.router-link-active {
-  @apply bg-blue-900/40 text-blue-400 font-medium;
+  .modal-body {
+    padding: 1rem;
+  }
 }
 </style>

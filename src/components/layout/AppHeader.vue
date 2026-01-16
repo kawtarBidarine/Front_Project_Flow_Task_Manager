@@ -1,11 +1,36 @@
 <template>
   <header class="header">
-    <div class="flex items-center space-x-6">
+    <div class="flex items-center space-x-4">
+      <!-- Mobile Menu Button -->
+      <button 
+        @click="$emit('toggle-sidebar')"
+        class="lg:hidden p-2 rounded-lg text-slate-300 hover:bg-slate-700 transition"
+        aria-label="Toggle menu"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          width="24" 
+          height="24" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="currentColor" 
+          stroke-width="2"
+          stroke-linecap="round" 
+          stroke-linejoin="round"
+        >
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <!-- Logo -->
       <router-link to="/" class="text-xl font-bold text-blue-400">
-        <img src="/logo.png" alt="Logo" width="100">
+        <img src="/logo.png" alt="Logo" width="100" class="h-8 w-auto">
       </router-link>
       
-      <nav class="hidden sm:flex space-x-4 text-sm">
+      <!-- Desktop Navigation -->
+      <nav class="hidden lg:flex space-x-4 text-sm">
         <router-link to="/" class="nav-link">Home</router-link>
         <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
         <router-link to="/projects" class="nav-link">Projects</router-link>
@@ -15,9 +40,9 @@
       </nav>
     </div>
 
-    <div class="flex items-center space-x-4">
+    <div class="flex items-center space-x-3 md:space-x-4">
       <!-- Project Context (shows when on a project page) -->
-      <div v-if="currentProject" class="project-context hidden lg:flex">
+      <div v-if="currentProject" class="project-context hidden xl:flex">
         <div 
           class="project-color-indicator" 
           :style="{ backgroundColor: currentProject.color || '#3b82f6' }"
@@ -36,7 +61,7 @@
             :alt="userStore.userName"
             class="w-8 h-8 rounded-full border-2 border-slate-600 hover:border-blue-400 transition"
           />
-          <span class="hidden md:inline text-sm font-medium text-slate-300">
+          <span class="hidden sm:inline text-sm font-medium text-slate-300">
             {{ userStore.userName }}
           </span>
           <svg 
@@ -47,7 +72,7 @@
             fill="none" 
             stroke="currentColor" 
             stroke-width="2"
-            class="text-slate-400"
+            class="hidden sm:block text-slate-400"
             :class="{ 'rotate-180': isDropdownOpen }"
             style="transition: transform 0.2s"
           >
@@ -65,9 +90,9 @@
                 :alt="userStore.userName"
                 class="w-12 h-12 rounded-full border-2 border-blue-500"
               />
-              <div class="ml-3">
-                <p class="text-white font-semibold">{{ userStore.userName }}</p>
-                <p class="text-slate-400 text-xs">{{ userStore.userEmail }}</p>
+              <div class="ml-3 min-w-0 flex-1">
+                <p class="text-white font-semibold truncate">{{ userStore.userName }}</p>
+                <p class="text-slate-400 text-xs truncate">{{ userStore.userEmail }}</p>
               </div>
             </div>
 
@@ -116,6 +141,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useUserStore } from '@/stores/user';
 import { useProjectStore } from '@/stores/project';
+
+defineEmits(['toggle-sidebar']);
 
 const router = useRouter();
 const route = useRoute();
@@ -184,7 +211,7 @@ onUnmounted(() => {
   grid-column: 1 / -1;
   background: #1e293b;
   border-bottom: 1px solid #334155;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -239,7 +266,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.375rem 0.5rem;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid #334155;
   border-radius: 0.75rem;
@@ -334,20 +361,19 @@ onUnmounted(() => {
   @apply text-white font-medium border-blue-400;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .project-context {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
+/* Mobile Responsive */
+@media (max-width: 640px) {
   .header {
-    padding: 0.625rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .dropdown-menu {
-    width: 240px;
+    width: calc(100vw - 2rem);
+    max-width: 280px;
+  }
+
+  .profile-trigger {
+    padding: 0.25rem 0.375rem;
   }
 }
 </style>
