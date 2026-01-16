@@ -10,18 +10,6 @@ const routes = [
     meta: { requiresAuth: false, hideShell: true }
   },
   {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/Register.vue'),
-    meta: { requiresAuth: false, hideShell: true }
-  },
-{
-  path: '/projects/:id/members',
-   component: () => import('@/views/Members.vue'),
-  meta: { requiresAuth: true }
-},
-  // Main Routes
-  {
     path: '/',
     name: 'Home',
     component: () => import('@/views/Home.vue'),
@@ -49,6 +37,12 @@ const routes = [
       requiresAuth: true,
       validateProject: true
     }
+  },
+  {
+    path: '/projects/:id/members',
+    name: 'ProjectMembers',
+    component: () => import('@/views/ProjectMembers.vue'),
+    meta: { requiresAuth: true }
   },
 
   // Tasks
@@ -123,18 +117,29 @@ const router = createRouter({
   routes,
 });
 
+// Track if we've already initialized to prevent multiple calls
+let isInitialized = false;
+
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore();
 
-  // Initialize user if token exists but user data is missing
-  if (userStore.token && !userStore.user && !userStore.loading) {
+  // CRITICAL FIX: Only initialize ONCE when app first loads, not on every route change
+  if (userStore.token && !userStore.user && !isInitialized && !userStore.loading) {
+    isInitialized = true;
     try {
-      console.log('🔄 Initializing user on route change...');
+      console.log('🔄 Initializing user session...');
       await userStore.initialize();
     } catch (err) {
-      console.error("Auth initialization failed", err);
-      userStore.logout();
+      console.error("❌ Auth initialization failed:", err);
+      // Don't logout immediately - token might still be valid
+      // Only logout if it's a 401/403 error
+      if (err.message?.includes('401') || err.message?.includes('403') || err.message?.includes('expired')) {
+        userStore.logout();
+        next({ name: 'Login', query: { redirect: to.fullPath } });
+        return;
+      }
+      // For other errors, allow navigation to continue
     }
   }
 
@@ -150,15 +155,16 @@ router.beforeEach(async (to, from, next) => {
 
   // Check if route requires admin
   if (to.meta.requiresAdmin && !isAdmin) {
-    console.log('⛔ Route requires admin, user is not admin');
+    console.log('⛔ Route requires admin access');
     next({ name: 'Home' });
     return;
   }
 
-  // Redirect authenticated users away from login/register
-  if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
-    console.log('✅ User already authenticated, redirecting to home');
-    next({ name: 'Home' });
+  // Redirect authenticated users away from login
+  if (to.name === 'Login' && isAuthenticated) {
+    console.log('✅ User already authenticated, redirecting');
+    const redirectPath = to.query.redirect || '/';
+    next(redirectPath);
     return;
   }
 

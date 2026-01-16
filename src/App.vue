@@ -1,7 +1,7 @@
 <template>
   <div v-if="!$route.meta.hideShell" class="app-layout">
-    <AppHeader v-if="!$route.meta.hideShell"/>
-    <AppSidebar v-if="!$route.meta.hideShell"/>
+    <AppHeader />
+    <AppSidebar />
     <main class="main-content">
       <router-view />
     </main>
@@ -11,25 +11,42 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/user';
-import { useProjectStore } from '@/stores/project'; // Import project store
+import { useProjectStore } from '@/stores/project';
 import AppHeader from './components/layout/AppHeader.vue';
 import AppSidebar from './components/layout/AppSidebar.vue';
 
+const router = useRouter();
 const userStore = useUserStore();
-const projectStore = useProjectStore(); // Initialize store
+const projectStore = useProjectStore();
 
 onMounted(async () => {
   console.log('App initializing...');
+  
+  // Initialize user ONLY ONCE on app mount
   await userStore.initialize();
   
-  if (userStore.token) {
-    projectStore.fetchProjects(); 
+  // Preload projects if authenticated and not on login page
+  if (userStore.token && !router.currentRoute.value.meta.hideShell) {
+    projectStore.fetchProjects().catch(err => {
+      console.error('Failed to preload projects:', err);
+    });
   }
-  
-  console.log('App ready!');
-});
+  });
+
+// Watch for authentication changes
+watch(() => userStore.token, (newToken, oldToken) => {
+  // User just logged in
+  if (newToken && !oldToken) {
+    projectStore.fetchProjects();
+  } 
+  // User just logged out
+  else if (!newToken && oldToken) {
+    projectStore.$reset();
+  }
+}, { immediate: false });
 </script>
 
 <style scoped>

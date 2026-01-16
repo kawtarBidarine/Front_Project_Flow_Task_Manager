@@ -138,11 +138,73 @@
             :style="{ backgroundColor: project.color || '#3b82f6' }"
           ></div>
           <div class="project-menu">
-            <button @click.stop="openProjectMenu(project.id)" class="menu-btn">
+            <button 
+              @click.stop="toggleDropdown(project.id)" 
+              class="menu-btn"
+              :class="{ 'active': activeDropdown === project.id }"
+            >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
             </button>
+            
+            <!-- Dropdown Menu -->
+            <transition name="dropdown">
+              <div 
+                v-if="activeDropdown === project.id" 
+                v-click-outside="() => closeDropdown()"
+                class="dropdown-menu"
+              >
+                <button 
+                  v-if="canManageProject(project)"
+                  @click.stop="editProject(project)" 
+                  class="dropdown-item"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Project
+                </button>
+                
+                <button 
+                  v-if="canManageProject(project)"
+                  @click.stop="manageMembers(project)" 
+                  class="dropdown-item"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  Manage Members
+                </button>
+
+                <div v-if="canManageProject(project)" class="dropdown-divider"></div>
+
+                <button 
+                  @click.stop="viewProject(project.id)" 
+                  class="dropdown-item"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View Details
+                </button>
+
+                <template v-if="canManageProject(project)">
+                  <div class="dropdown-divider"></div>
+                  
+                  <button 
+                    @click.stop="confirmDeleteProject(project)" 
+                    class="dropdown-item danger"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete Project
+                  </button>
+                </template>
+              </div>
+            </transition>
           </div>
         </div>
 
@@ -246,11 +308,75 @@
           </div>
         </div>
 
-        <button @click.stop="openProjectMenu(project.id)" class="list-menu-btn">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-          </svg>
-        </button>
+        <div class="list-menu-wrapper">
+          <button 
+            @click.stop="toggleDropdown(project.id)" 
+            class="list-menu-btn"
+            :class="{ 'active': activeDropdown === project.id }"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <transition name="dropdown">
+            <div 
+              v-if="activeDropdown === project.id" 
+              v-click-outside="() => closeDropdown()"
+              class="dropdown-menu"
+            >
+              <button 
+                v-if="canManageProject(project)"
+                @click.stop="editProject(project)" 
+                class="dropdown-item"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Project
+              </button>
+              
+              <button 
+                v-if="canManageProject(project)"
+                @click.stop="manageMembers(project)" 
+                class="dropdown-item"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Manage Members
+              </button>
+
+              <div v-if="canManageProject(project)" class="dropdown-divider"></div>
+
+              <button 
+                @click.stop="viewProject(project.id)" 
+                class="dropdown-item"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Details
+              </button>
+
+              <template v-if="canManageProject(project)">
+                <div class="dropdown-divider"></div>
+                
+                <button 
+                  @click.stop="confirmDeleteProject(project)" 
+                  class="dropdown-item danger"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Project
+                </button>
+              </template>
+            </div>
+          </transition>
+        </div>
       </div>
     </div>
 
@@ -388,7 +514,9 @@
                 <svg class="warning-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <p class="warning-text">Are you sure you want to delete this project? This action cannot be undone.</p>
+                <p class="warning-text">
+                  Are you sure you want to delete <strong>{{ projectToDelete?.name }}</strong>? This action cannot be undone.
+                </p>
               </div>
 
               <div class="modal-actions">
@@ -440,6 +568,75 @@ const formData = ref({
   start_date: '',
   end_date: ''
 });
+
+const activeDropdown = ref(null);
+
+const vClickOutside = {
+  mounted(el, binding) {
+    el.clickOutsideEvent = (event) => {
+      if (!(el === event.target || el.contains(event.target))) {
+        binding.value();
+      }
+    };
+    document.addEventListener('click', el.clickOutsideEvent);
+  },
+  unmounted(el) {
+    document.removeEventListener('click', el.clickOutsideEvent);
+  }
+};
+
+const canManageProject = (project) => {
+  // System admin can manage all projects
+  if (userStore.isAdmin) {
+    return true;
+  }
+  
+  // Check project-specific role
+  return project.user_role === 'owner' || project.user_role === 'admin';
+};
+
+const toggleDropdown = (projectId) => {
+  if (activeDropdown.value === projectId) {
+    activeDropdown.value = null;
+  } else {
+    activeDropdown.value = projectId;
+  }
+};
+
+const closeDropdown = () => {
+  activeDropdown.value = null;
+};
+
+const editProject = (project) => {
+  editingProject.value = project;
+  formData.value = {
+    name: project.name,
+    description: project.description || '',
+    status: project.status || 'active',
+    priority: project.priority || 'medium',
+    color: project.color || '#3b82f6',
+    start_date: project.start_date || '',
+    end_date: project.end_date || ''
+  };
+  showCreateModal.value = true;
+  activeDropdown.value = null;
+};
+
+const manageMembers = (project) => {
+  router.push(`/projects/${project.id}/members`);
+  activeDropdown.value = null;
+};
+
+const viewProject = (projectId) => {
+  router.push(`/projects/${projectId}/board`);
+  activeDropdown.value = null;
+};
+
+const confirmDeleteProject = (project) => {
+  projectToDelete.value = project;
+  showDeleteModal.value = true;
+  activeDropdown.value = null;
+};
 
 // Computed
 const filteredProjects = computed(() => {
@@ -512,23 +709,6 @@ const openProject = (projectId) => {
   router.push(`/projects/${projectId}/board`);
 };
 
-const openProjectMenu = (projectId) => {
-  // TODO: Implement context menu
-  const project = projectStore.projects.find(p => p.id === projectId);
-  if (project) {
-    editingProject.value = project;
-    formData.value = {
-      name: project.name,
-      description: project.description || '',
-      status: project.status || 'active',
-      priority: project.priority || 'medium',
-      color: project.color || '#3b82f6',
-      start_date: project.start_date || '',
-      end_date: project.end_date || ''
-    };
-    showCreateModal.value = true;
-  }
-};
 
 const closeModal = () => {
   showCreateModal.value = false;
@@ -1470,5 +1650,77 @@ onMounted(() => {
   .view-toggle {
     display: none;
   }
+}
+/* Dropdown Menu Styles */
+.project-menu,
+.list-menu-wrapper {
+  position: relative;
+}
+
+.menu-btn.active,
+.list-menu-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  min-width: 200px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 1000;
+}
+
+.dropdown-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+}
+
+.dropdown-item.danger {
+  color: #f87171;
+}
+
+.dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #334155;
+  margin: 0.25rem 0;
+}
+
+/* Dropdown Transition */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: all 0.2s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

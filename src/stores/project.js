@@ -283,6 +283,13 @@ export const useProjectStore = defineStore('project', () => {
     }
   }
 
+  function $reset() {
+  projects.value = [];
+  currentProject.value = null;
+  loading.value = false;
+  error.value = null;
+}
+
   return {
     // State
     projects,
@@ -304,8 +311,7 @@ export const useProjectStore = defineStore('project', () => {
     removeMember,
     updateMemberRole,
     fetchProjectMembers,
-    isProjectAdmin
+    isProjectAdmin,
+    $reset
   };
-}, {
-  persist: true
 });

@@ -190,7 +190,6 @@ export const useKanbanStore = defineStore('kanban', () => {
       return { success: false, error: 'No project selected' };
     }
 
-    loading.value = true;
     error.value = null;
 
     try {
@@ -200,6 +199,31 @@ export const useKanbanStore = defineStore('kanban', () => {
         ? Math.max(...columnTasks.map(t => t.position || 0))
         : 0;
 
+      // Create optimistic task with temporary ID
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
+      const optimisticTask = {
+        id: tempId,
+        title: taskData.title.trim(),
+        description: taskData.description?.trim() || '',
+        priority: taskData.priority || 'medium',
+        status: status,
+        position: maxPosition + 1,
+        type: taskData.type || 'task',
+        due_date: taskData.due_date || null,
+        assignee_id: taskData.assignee_id || userStore.user?.id || null,
+        assignee_name: taskData.assignee_name || userStore.userName || null,
+        assignee_email: taskData.assignee_email || userStore.userEmail || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        project_id: projectId,
+        _isOptimistic: true // Internal flag
+      };
+
+      // 1. IMMEDIATELY add to UI (Optimistic Update)
+      tasks.value = [...tasks.value, optimisticTask];
+      showAddTask.value = null;
+
+      // 2. Prepare data for API
       const newTask = {
         title: taskData.title.trim(),
         description: taskData.description?.trim() || '',
@@ -208,9 +232,10 @@ export const useKanbanStore = defineStore('kanban', () => {
         position: maxPosition + 1,
         type: taskData.type || 'task',
         due_date: taskData.due_date || null,
-        assignee_id: taskData.assignee_id || userStore.user.id // Auto-assign to self in my-tasks mode
+        assignee_id: taskData.assignee_id || userStore.user?.id || null
       };
 
+      // 3. Send to server in background
       const response = await fetch(`${API_URL}/projects/${projectId}/tasks`, {
         method: 'POST',
         headers: getHeaders(),
@@ -224,22 +249,28 @@ export const useKanbanStore = defineStore('kanban', () => {
 
       const data = await response.json();
       
-      // Refresh tasks based on mode
-      if (mode.value === 'my-tasks') {
-        await fetchMyTasks(selectedProjectFilter.value);
+      // 4. Replace optimistic task with real task from server
+      const taskIndex = tasks.value.findIndex(t => t.id === tempId);
+      if (taskIndex !== -1) {
+        tasks.value = [
+          ...tasks.value.slice(0, taskIndex),
+          { ...data.task, _isOptimistic: false },
+          ...tasks.value.slice(taskIndex + 1)
+        ];
       } else {
-        await fetchTasks(projectId);
+        // If not found, just add the real task
+        tasks.value = [...tasks.value, data.task];
       }
       
-      showAddTask.value = null;
-      
-      return { success: true, id: data.id };
+      return { success: true, id: data.id || data.task?.id };
     } catch (err) {
       error.value = err.message;
       console.error('Failed to create task:', err);
+      
+      // 5. Remove optimistic task on error
+      tasks.value = tasks.value.filter(t => !t._isOptimistic);
+      
       return { success: false, error: err.message };
-    } finally {
-      loading.value = false;
     }
   }
 
@@ -403,6 +434,18 @@ export const useKanbanStore = defineStore('kanban', () => {
     selectedProjectFilter.value = null;
   }
 
+  function $reset() {
+  tasks.value = [];
+  currentProjectId.value = null;
+  showAddTask.value = null;
+  draggedTask.value = null;
+  draggedFrom.value = null;
+  error.value = null;
+  mode.value = 'project';
+  selectedProjectFilter.value = null;
+  availableProjects.value = [];
+}
+
   return {
     // State
     tasks,
@@ -433,6 +476,7 @@ export const useKanbanStore = defineStore('kanban', () => {
     startDrag,
     dropTask,
     cancelDrag,
-    clearBoard
+    clearBoard,
+    $reset
   };
 });

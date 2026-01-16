@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { useProjectStore } from './project';
+import { useKanbanStore } from './kanban';   
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.203.130:5000/api';
 
@@ -133,7 +135,6 @@ export const useUserStore = defineStore('user', () => {
     }
 
     try {
-      
       const response = await fetch(`${API_URL}/user/profile`, {
         method: 'GET',
         headers: {
@@ -144,7 +145,12 @@ export const useUserStore = defineStore('user', () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Failed to fetch profile');
+        
+        // CRITICAL: Throw specific error with status code
+        const errorMsg = data.message || 'Failed to fetch profile';
+        const error = new Error(errorMsg);
+        error.status = response.status;
+        throw error;
       }
 
       const data = await response.json();
@@ -152,9 +158,13 @@ export const useUserStore = defineStore('user', () => {
     
     } catch (err) {
       console.error('Failed to fetch user profile:', err);
-      if (err.message.includes('Token') || err.message.includes('expired')) {
+      
+      // Only logout on authentication errors (401, 403)
+      if (err.status === 401 || err.status === 403 || err.message?.includes('expired')) {
+        console.log('🚪 Token invalid or expired, logging out');
         logout();
       }
+      
       throw err; // Re-throw so caller can handle it
     }
   }
@@ -189,14 +199,6 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  function logout() {
-    user.value = null;
-    token.value = null;
-    localStorage.removeItem('user_token');
-    localStorage.removeItem('user_email');
-    localStorage.removeItem('user_id');
-  }
-
   async function initialize() {
     if (!token.value) {
       loading.value = false; 
@@ -212,7 +214,22 @@ export const useUserStore = defineStore('user', () => {
       loading.value = false;
     }
   }
-
+function logout() {
+  // Import the other stores
+  const projectStore = useProjectStore();
+  const kanbanStore = useKanbanStore();
+  
+  // Reset all stores
+  user.value = null;
+  token.value = null;
+  localStorage.removeItem('user_token');
+  localStorage.removeItem('user_email');
+  localStorage.removeItem('user_id');
+  
+  // Clear other stores
+  projectStore.$reset();
+  kanbanStore.$reset();
+}
   return {
     user,
     token,

@@ -10,6 +10,7 @@
           class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
           required
           autofocus
+          :disabled="submitting"
         />
       </div>
 
@@ -20,6 +21,7 @@
           placeholder="Description (optional)..."
           rows="2"
           class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+          :disabled="submitting"
         ></textarea>
       </div>
 
@@ -32,7 +34,7 @@
         <select
           v-model="form.assignee_id"
           class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
-          :disabled="loadingMembers"
+          :disabled="loadingMembers || submitting"
         >
           <option value="">Unassigned</option>
           <option 
@@ -55,6 +57,7 @@
           <select
             v-model="form.priority"
             class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+            :disabled="submitting"
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
@@ -68,6 +71,7 @@
           <select
             v-model="form.type"
             class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+            :disabled="submitting"
           >
             <option value="task">Task</option>
             <option value="bug">Bug</option>
@@ -85,6 +89,7 @@
           v-model="form.due_date"
           type="date"
           class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+          :disabled="submitting"
         />
       </div>
 
@@ -93,14 +98,16 @@
         <button
           type="submit"
           class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="loadingMembers"
+          :disabled="loadingMembers || submitting"
         >
-          Add Task
+          <span v-if="submitting">Adding...</span>
+          <span v-else>Add Task</span>
         </button>
         <button
           type="button"
           @click="$emit('cancel')"
           class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+          :disabled="submitting"
         >
           Cancel
         </button>
@@ -140,6 +147,7 @@ const form = ref({
 
 const projectMembers = ref([]);
 const loadingMembers = ref(false);
+const submitting = ref(false);
 
 // Fetch project members
 async function fetchProjectMembers() {
@@ -177,16 +185,23 @@ async function fetchProjectMembers() {
 }
 
 const handleSubmit = () => {
-  if (!form.value.title.trim()) {
+  if (!form.value.title.trim() || submitting.value) {
     return;
   }
 
-  // Emit the task data
+  submitting.value = true;
+
+  // Find assignee details for optimistic update
+  const assignee = projectMembers.value.find(m => m.id === form.value.assignee_id);
+  
+  // Emit the task data with extra info for optimistic rendering
   emit('add-task', {
     ...form.value,
     title: form.value.title.trim(),
     description: form.value.description.trim(),
-    assignee_id: form.value.assignee_id || null // Ensure null if empty
+    assignee_id: form.value.assignee_id || null,
+    assignee_name: assignee ? (assignee.name || assignee.email) : null,
+    assignee_email: assignee ? assignee.email : null
   });
 
   // Reset form
@@ -198,6 +213,11 @@ const handleSubmit = () => {
     type: 'task',
     due_date: ''
   };
+
+  // Reset submitting state after a brief moment
+  setTimeout(() => {
+    submitting.value = false;
+  }, 300);
 };
 
 // Load members when component mounts
