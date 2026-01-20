@@ -134,15 +134,12 @@ const projectMembers = computed(() => {
 });
 
 const milestones = computed(() => {
-  // TODO: Fetch milestones from API
   return [];
 });
 
-// Load board data - FIXED: Handle both modes
+// Load board data
 const loadBoard = async () => {
   if (props.mode === 'my-tasks') {
-    // In my-tasks mode, we don't need a project ID
-    // The parent component handles calling fetchMyTasks
     return;
   }
   
@@ -244,7 +241,6 @@ onMounted(() => {
   if (props.mode === 'project') {
     loadBoard();
   }
-  // In my-tasks mode, the parent component handles the initial load
 });
 
 onUnmounted(() => {

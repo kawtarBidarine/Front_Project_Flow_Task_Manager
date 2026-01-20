@@ -88,7 +88,6 @@ const emit = defineEmits([
 
 const isDragOver = ref(false);
 
-// Handle task click and emit to parent
 const handleTaskClick = (task) => {
   emit('task-click', task);
 };
@@ -104,7 +103,6 @@ const onDragOver = (event) => {
 };
 
 const onDragLeave = (event) => {
-  // Only trigger if leaving the column itself, not child elements
   const rect = event.currentTarget.getBoundingClientRect();
   const x = event.clientX;
   const y = event.clientY;
@@ -115,7 +113,6 @@ const onDragLeave = (event) => {
   }
 };
 
-// FIXED: Emit object with columnId property
 const onDrop = (event) => {
   event.preventDefault();
   isDragOver.value = false;

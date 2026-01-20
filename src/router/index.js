@@ -128,10 +128,10 @@ router.beforeEach(async (to, from, next) => {
   if (userStore.token && !userStore.user && !isInitialized && !userStore.loading) {
     isInitialized = true;
     try {
-      console.log('🔄 Initializing user session...');
+      console.log('Initializing user session...');
       await userStore.initialize();
     } catch (err) {
-      console.error("❌ Auth initialization failed:", err);
+      console.error("Auth initialization failed:", err);
       // Don't logout immediately - token might still be valid
       // Only logout if it's a 401/403 error
       if (err.message?.includes('401') || err.message?.includes('403') || err.message?.includes('expired')) {
@@ -148,21 +148,21 @@ router.beforeEach(async (to, from, next) => {
 
   // Check if route requires authentication
   if (to.meta.requiresAuth && !isAuthenticated) {
-    console.log('🔒 Route requires auth, redirecting to login');
+    console.log('Route requires auth, redirecting to login');
     next({ name: 'Login', query: { redirect: to.fullPath } });
     return;
   }
 
   // Check if route requires admin
   if (to.meta.requiresAdmin && !isAdmin) {
-    console.log('⛔ Route requires admin access');
+    console.log('Route requires admin access');
     next({ name: 'Home' });
     return;
   }
 
   // Redirect authenticated users away from login
   if (to.name === 'Login' && isAuthenticated) {
-    console.log('✅ User already authenticated, redirecting');
+    console.log('User already authenticated, redirecting');
     const redirectPath = to.query.redirect || '/';
     next(redirectPath);
     return;

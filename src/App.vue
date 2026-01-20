@@ -65,17 +65,14 @@ const handleResize = () => {
 onMounted(async () => {
   console.log('App initializing...');
   
-  // Initialize user ONLY ONCE on app mount
   await userStore.initialize();
   
-  // Preload projects if authenticated and not on login page
   if (userStore.token && !router.currentRoute.value.meta.hideShell) {
     projectStore.fetchProjects().catch(err => {
       console.error('Failed to preload projects:', err);
     });
   }
 
-  // Add resize listener
   window.addEventListener('resize', handleResize);
 });
 

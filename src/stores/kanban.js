@@ -16,10 +16,9 @@ export const useKanbanStore = defineStore('kanban', () => {
   const draggedTask = ref(null);
   const draggedFrom = ref(null);
   
-  // New: My Tasks mode state
-  const mode = ref('project'); // 'project' or 'my-tasks'
-  const selectedProjectFilter = ref(null); // For filtering my tasks by project
-  const availableProjects = ref([]); // Projects user is member of
+  const mode = ref('project'); 
+  const selectedProjectFilter = ref(null); 
+  const availableProjects = ref([]); 
 
   // Column definitions
   const columnDefinitions = {
@@ -167,20 +166,16 @@ export const useKanbanStore = defineStore('kanban', () => {
     }
   }
 
-  // Toggle add task form
   function toggleAddTask(columnId) {
     showAddTask.value = showAddTask.value === columnId ? null : columnId;
   }
 
-  // Create new task (works for both modes)
   async function createTask(columnId, taskData) {
-    // In my-tasks mode, we need a project ID
     if (mode.value === 'my-tasks' && !taskData.project_id) {
       error.value = 'Project ID is required';
       return { success: false, error: 'Project ID is required' };
     }
 
-    // In project mode, use current project
     const projectId = mode.value === 'project' 
       ? currentProjectId.value 
       : taskData.project_id;
@@ -199,7 +194,6 @@ export const useKanbanStore = defineStore('kanban', () => {
         ? Math.max(...columnTasks.map(t => t.position || 0))
         : 0;
 
-      // Create optimistic task with temporary ID
       const tempId = `temp-${Date.now()}-${Math.random()}`;
       const optimisticTask = {
         id: tempId,
@@ -216,14 +210,12 @@ export const useKanbanStore = defineStore('kanban', () => {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         project_id: projectId,
-        _isOptimistic: true // Internal flag
+        _isOptimistic: true 
       };
 
-      // 1. IMMEDIATELY add to UI (Optimistic Update)
       tasks.value = [...tasks.value, optimisticTask];
       showAddTask.value = null;
 
-      // 2. Prepare data for API
       const newTask = {
         title: taskData.title.trim(),
         description: taskData.description?.trim() || '',
@@ -235,7 +227,6 @@ export const useKanbanStore = defineStore('kanban', () => {
         assignee_id: taskData.assignee_id || userStore.user?.id || null
       };
 
-      // 3. Send to server in background
       const response = await fetch(`${API_URL}/projects/${projectId}/tasks`, {
         method: 'POST',
         headers: getHeaders(),
@@ -249,7 +240,6 @@ export const useKanbanStore = defineStore('kanban', () => {
 
       const data = await response.json();
       
-      // 4. Replace optimistic task with real task from server
       const taskIndex = tasks.value.findIndex(t => t.id === tempId);
       if (taskIndex !== -1) {
         tasks.value = [
@@ -258,7 +248,6 @@ export const useKanbanStore = defineStore('kanban', () => {
           ...tasks.value.slice(taskIndex + 1)
         ];
       } else {
-        // If not found, just add the real task
         tasks.value = [...tasks.value, data.task];
       }
       
@@ -267,26 +256,20 @@ export const useKanbanStore = defineStore('kanban', () => {
       error.value = err.message;
       console.error('Failed to create task:', err);
       
-      // 5. Remove optimistic task on error
       tasks.value = tasks.value.filter(t => !t._isOptimistic);
       
       return { success: false, error: err.message };
     }
   }
 
-  // Update task
   async function updateTask(taskId, updates) {
-    // Guard: If we are already doing a heavy load, wait
     if (loading.value) return; 
 
     try {
-      // 1. Update Local State Immediately (Optimistic UI)
       const taskIndex = tasks.value.findIndex(t => t.id === taskId);
       if (taskIndex !== -1) {
         tasks.value[taskIndex] = { ...tasks.value[taskIndex], ...updates };
       }
-
-      // 2. Perform API call in background
       const response = await fetch(`${API_URL}/tasks/${taskId}`, {
         method: 'PUT',
         headers: getHeaders(),
@@ -299,13 +282,11 @@ export const useKanbanStore = defineStore('kanban', () => {
       
       return { success: true };
     } catch (err) {
-      // 3. Rollback or handle error if API fails
       console.error('Update failed:', err);
       return { success: false, error: err.message };
     }
   }
 
-  // Delete task
   async function deleteTask(taskId) {
     loading.value = true;
     error.value = null;
@@ -333,7 +314,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     }
   }
 
-  // Drag and drop
   function startDrag(task, columnId) {
     draggedTask.value = task;
     draggedFrom.value = columnId;
@@ -354,14 +334,12 @@ export const useKanbanStore = defineStore('kanban', () => {
       const targetTasks = columns.value[targetColumnId].tasks;
       const newPosition = targetTasks.length;
 
-      // Prepare bulk update
       const updates = [{
         id: draggedTask.value.id,
         status: targetStatus,
         position: newPosition
       }];
 
-      // Reorder source column tasks
       const sourceTasks = columns.value[draggedFrom.value].tasks
         .filter(t => t.id !== draggedTask.value.id);
       
@@ -386,7 +364,6 @@ export const useKanbanStore = defineStore('kanban', () => {
         throw new Error(data.message || 'Failed to move task');
       }
 
-      // Refresh based on mode
       if (mode.value === 'my-tasks') {
         await fetchMyTasks(selectedProjectFilter.value);
       } else {
@@ -401,7 +378,6 @@ export const useKanbanStore = defineStore('kanban', () => {
       error.value = err.message;
       console.error('Failed to drop task:', err);
       
-      // Reload on error
       if (mode.value === 'my-tasks') {
         await fetchMyTasks(selectedProjectFilter.value);
       } else {
@@ -422,7 +398,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     draggedFrom.value = null;
   }
 
-  // Clear state
   function clearBoard() {
     tasks.value = [];
     currentProjectId.value = null;
