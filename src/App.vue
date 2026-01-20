@@ -1,31 +1,42 @@
 <template>
-  <div v-if="!$route.meta.hideShell" class="app-layout">
-    <AppHeader @toggle-sidebar="toggleSidebar" :is-sidebar-open="isSidebarOpen" />
-    
-    <!-- Mobile Overlay -->
-    <transition name="overlay">
-      <div 
-        v-if="isSidebarOpen && isMobile" 
-        class="sidebar-overlay"
-        @click="closeSidebar"
-      ></div>
-    </transition>
-    
-    <!-- Sidebar with mobile slide animation -->
-    <transition name="sidebar-slide">
-      <AppSidebar 
-        v-show="!isMobile || isSidebarOpen"
-        :class="{ 'sidebar-mobile': isMobile }"
-        @close="closeSidebar"
-      />
-    </transition>
-    
-    <main class="main-content">
-      <router-view />
-    </main>
+  <!-- Global Loading Screen -->
+  <div v-if="isInitializing" class="loading-screen">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading...</p>
+    </div>
   </div>
 
-  <router-view v-else />
+  <!-- App Content -->
+  <div v-else>
+    <div v-if="!$route.meta.hideShell && userStore.token" class="app-layout">
+      <AppHeader @toggle-sidebar="toggleSidebar" :is-sidebar-open="isSidebarOpen" />
+      
+      <!-- Mobile Overlay -->
+      <transition name="overlay">
+        <div 
+          v-if="isSidebarOpen && isMobile" 
+          class="sidebar-overlay"
+          @click="closeSidebar"
+        ></div>
+      </transition>
+      
+      <!-- Sidebar with mobile slide animation -->
+      <transition name="sidebar-slide">
+        <AppSidebar 
+          v-show="!isMobile || isSidebarOpen"
+          :class="{ 'sidebar-mobile': isMobile }"
+          @close="closeSidebar"
+        />
+      </transition>
+      
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
+
+    <router-view v-else />
+  </div>
 </template>
 
 <script setup>
@@ -40,7 +51,8 @@ const router = useRouter();
 const userStore = useUserStore();
 const projectStore = useProjectStore();
 
-// Mobile sidebar state
+const isInitializing = ref(true);
+
 const isSidebarOpen = ref(false);
 const windowWidth = ref(window.innerWidth);
 
@@ -56,7 +68,6 @@ const closeSidebar = () => {
 
 const handleResize = () => {
   windowWidth.value = window.innerWidth;
-  // Close sidebar when switching to desktop
   if (!isMobile.value) {
     isSidebarOpen.value = false;
   }
@@ -65,12 +76,18 @@ const handleResize = () => {
 onMounted(async () => {
   console.log('App initializing...');
   
-  await userStore.initialize();
-  
-  if (userStore.token && !router.currentRoute.value.meta.hideShell) {
-    projectStore.fetchProjects().catch(err => {
-      console.error('Failed to preload projects:', err);
-    });
+  try {
+    await userStore.initialize();
+    
+    if (userStore.token && !router.currentRoute.value.meta.hideShell) {
+      await projectStore.fetchProjects().catch(err => {
+        console.error('Failed to preload projects:', err);
+      });
+    }
+  } catch (error) {
+    console.error('App initialization error:', error);
+  } finally {
+    isInitializing.value = false;
   }
 
   window.addEventListener('resize', handleResize);
@@ -80,19 +97,15 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-// Watch for authentication changes
 watch(() => userStore.token, (newToken, oldToken) => {
-  // User just logged in
   if (newToken && !oldToken) {
     projectStore.fetchProjects();
   } 
-  // User just logged out
   else if (!newToken && oldToken) {
     projectStore.$reset();
   }
 }, { immediate: false });
 
-// Close sidebar on route change (mobile)
 watch(() => router.currentRoute.value.path, () => {
   if (isMobile.value) {
     closeSidebar();
@@ -101,6 +114,48 @@ watch(() => router.currentRoute.value.path, () => {
 </script>
 
 <style scoped>
+/* Loading Screen */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* App Layout */
 .app-layout {
   display: grid;
   grid-template-rows: 60px 1fr;
