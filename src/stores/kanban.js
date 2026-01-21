@@ -28,7 +28,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     done: { title: 'Done', color: 'bg-emerald-500', status: 'done' }
   };
 
-  // Computed: Organize tasks into columns
   const columns = computed(() => {
     const cols = {};
     
@@ -47,7 +46,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     return cols;
   });
 
-  // Computed: Task counts per column
   const taskCounts = computed(() => {
     const counts = {};
     Object.keys(columnDefinitions).forEach(colId => {
@@ -56,7 +54,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     return counts;
   });
 
-  // Computed: Statistics
   const stats = computed(() => ({
     total: tasks.value.length,
     backlog: taskCounts.value.backlog || 0,
@@ -68,7 +65,6 @@ export const useKanbanStore = defineStore('kanban', () => {
       : 0
   }));
 
-  // Helper: Get auth headers
   const getHeaders = () => ({
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${userStore.token}`
@@ -83,7 +79,6 @@ export const useKanbanStore = defineStore('kanban', () => {
     try {
       let url = `${API_URL}/my-tasks`;
       
-      // Add project filter if specified
       if (projectFilter) {
         url += `?project_id=${projectFilter}`;
       }
@@ -326,7 +321,10 @@ export const useKanbanStore = defineStore('kanban', () => {
       return { success: true };
     }
 
-    loading.value = true;
+    const originalTasks = [...tasks.value];
+    const movedTask = draggedTask.value;
+    const sourceColumnId = draggedFrom.value;
+    
     error.value = null;
 
     try {
@@ -334,14 +332,39 @@ export const useKanbanStore = defineStore('kanban', () => {
       const targetTasks = columns.value[targetColumnId].tasks;
       const newPosition = targetTasks.length;
 
+      const updatedTasks = tasks.value.map(task => {
+        if (task.id === movedTask.id) {
+          return {
+            ...task,
+            status: targetStatus,
+            position: newPosition,
+            _optimisticUpdate: true
+          };
+        } else if (columnDefinitions[sourceColumnId].status === task.status && 
+                   task.position > movedTask.position) {
+          return {
+            ...task,
+            position: task.position - 1
+          };
+        }
+        return task;
+      });
+
+      tasks.value = updatedTasks;
+
+      const taskId = movedTask.id;
+      draggedTask.value = null;
+      draggedFrom.value = null;
+
       const updates = [{
-        id: draggedTask.value.id,
+        id: taskId,
         status: targetStatus,
         position: newPosition
       }];
 
-      const sourceTasks = columns.value[draggedFrom.value].tasks
-        .filter(t => t.id !== draggedTask.value.id);
+      const sourceTasks = originalTasks
+        .filter(t => columnDefinitions[sourceColumnId].status === t.status && t.id !== taskId)
+        .sort((a, b) => a.position - b.position);
       
       sourceTasks.forEach((task, index) => {
         if (task.position !== index) {
@@ -364,32 +387,22 @@ export const useKanbanStore = defineStore('kanban', () => {
         throw new Error(data.message || 'Failed to move task');
       }
 
-      if (mode.value === 'my-tasks') {
-        await fetchMyTasks(selectedProjectFilter.value);
-      } else {
-        await fetchTasks(currentProjectId.value);
-      }
+      tasks.value = tasks.value.map(task => {
+        const { _optimisticUpdate, ...rest } = task;
+        return rest;
+      });
 
-      draggedTask.value = null;
-      draggedFrom.value = null;
-      
       return { success: true };
     } catch (err) {
       error.value = err.message;
       console.error('Failed to drop task:', err);
       
-      if (mode.value === 'my-tasks') {
-        await fetchMyTasks(selectedProjectFilter.value);
-      } else {
-        await fetchTasks(currentProjectId.value);
-      }
+      tasks.value = originalTasks;
       
       draggedTask.value = null;
       draggedFrom.value = null;
       
       return { success: false, error: err.message };
-    } finally {
-      loading.value = false;
     }
   }
 
@@ -410,16 +423,16 @@ export const useKanbanStore = defineStore('kanban', () => {
   }
 
   function $reset() {
-  tasks.value = [];
-  currentProjectId.value = null;
-  showAddTask.value = null;
-  draggedTask.value = null;
-  draggedFrom.value = null;
-  error.value = null;
-  mode.value = 'project';
-  selectedProjectFilter.value = null;
-  availableProjects.value = [];
-}
+    tasks.value = [];
+    currentProjectId.value = null;
+    showAddTask.value = null;
+    draggedTask.value = null;
+    draggedFrom.value = null;
+    error.value = null;
+    mode.value = 'project';
+    selectedProjectFilter.value = null;
+    availableProjects.value = [];
+  }
 
   return {
     // State

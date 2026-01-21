@@ -18,14 +18,12 @@
       </button>
     </div>
 
-    <!-- Empty State - FIXED: Only show for project mode without a project -->
     <div v-else-if="mode !== 'my-tasks' && !kanbanStore.currentProjectId" class="empty-state">
       <div class="empty-icon">📋</div>
       <h3 class="text-xl font-semibold text-slate-300 mb-2">No Project Selected</h3>
       <p class="text-slate-400">Please select a project to view its board</p>
     </div>
 
-    <!-- Board Header with Stats - FIXED: Show for both modes when we have columns -->
     <div v-else-if="Object.keys(kanbanStore.columns).length > 0" class="board-content">
       <div class="board-header">
         <div class="board-stats">
@@ -115,7 +113,6 @@ const projectStore = useProjectStore();
 const showTaskDetails = ref(false);
 const selectedTask = ref({});
 
-// ADDED: Accept mode prop
 const props = defineProps({
   projectId: {
     type: String,
@@ -128,7 +125,6 @@ const props = defineProps({
   }
 });
 
-// Get project members and milestones
 const projectMembers = computed(() => {
   return projectStore.currentProject?.members || [];
 });
@@ -137,13 +133,11 @@ const milestones = computed(() => {
   return [];
 });
 
-// Load board data
 const loadBoard = async () => {
   if (props.mode === 'my-tasks') {
     return;
   }
   
-  // Project mode - needs a project ID
   const projectId = props.projectId || route.params.projectId || route.query.projectId;
   
   if (!projectId) {
@@ -226,7 +220,6 @@ const handleDrop = async ({ columnId }) => {
   }
 };
 
-// Watch for project changes (only in project mode)
 watch(
   () => props.projectId || route.params.projectId,
   (newProjectId) => {
@@ -247,7 +240,6 @@ onUnmounted(() => {
   kanbanStore.cancelDrag();
 });
 
-// Auto-refresh every 30 seconds (optional) - FIXED: Handle both modes
 let refreshInterval;
 onMounted(() => {
   refreshInterval = setInterval(() => {
